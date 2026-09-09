@@ -16,14 +16,23 @@ def main() -> None:
             "." for _ in range(ROWS * COLUMNS)
             ]
     curr_head_pos = 10 * 10                     # ROW * COLUMN
-    board_array[curr_head_pos] = "s"            # initialize the snake's head position in the board_array
-
+    board_array = update_board_add(             # initialize the snake's head position in the board_array
+        board=board_array.copy(),
+        obj="s",
+        curr_pos_idx=curr_head_pos
+        )            
+    
     # snake is going to be a list because it is made up of many rectangles
     snake = [pygame.Rect(SNAKE_X, SNAKE_Y, TILE_SIZE, TILE_SIZE)]
 
     # generate random x position and y position for the food such that it doesn't overlap with where the snake is
     food_x, food_y = get_random_pos(snake)
     food = pygame.Rect(food_x, food_y, TILE_SIZE, TILE_SIZE)
+    board_array = update_board_add(
+        board=board_array.copy(),
+        obj="f",
+        curr_pos_idx=int((food_x / TILE_SIZE) * (food_y / TILE_SIZE))
+    )
 
     # the velocity of the snake's head
     velocity = (0, 0)
@@ -47,9 +56,10 @@ def main() -> None:
                 elif (event.key == pygame.K_LEFT) and not (velocity == (TILE_SIZE, 0)):
                     velocity = (-TILE_SIZE, 0)
 
+        prev_pos = int((snake[0].x / TILE_SIZE) * (snake[0].y / TILE_SIZE))
         snake[0].move_ip(velocity)
-        update_board(board=board_array, obj="s", row=(snake[0].y / TILE_SIZE), column=(snake[0].x / TILE_SIZE))
-        curr_head_pos = (snake[0].y / TILE_SIZE) * (snake[0].x / TILE_SIZE)
+        curr_head_pos = int((snake[0].x / TILE_SIZE) * (snake[0].y / TILE_SIZE))
+        board_array = update_board_swap(board=board_array.copy(), curr_pos_idx=curr_head_pos, prev_pos_idx=prev_pos)
 
         if not (window.get_rect().contains(snake[0])):  # if the snake is outside of the board then end the game
             running = False
@@ -59,24 +69,27 @@ def main() -> None:
 
         if snake[0].center == food.center:              # if the snake head collides with food then add to snake length
             snake.append(food)
+            curr_pos_idx = int((food.x / TILE_SIZE) * (food.y / TILE_SIZE))
+            board_array = update_board_add(board=board_array.copy(), obj="s", curr_pos_idx=curr_pos_idx)
 
             if len(snake) == (ROWS * COLUMNS):          # check if the snake covers the entire board
                 running = False
             else:
                 food_x, food_y = get_random_pos(snake=snake)
-                update_board(board=board_array, obj="f", row=(food_y / TILE_SIZE), column=(food_x / TILE_SIZE))
                 food = pygame.Rect(food_x, food_y, TILE_SIZE, TILE_SIZE)
-            
+                curr_pos_idx = int((food.x / TILE_SIZE) * (food.y / TILE_SIZE))
+                board_array = update_board_add(board=board_array.copy(), obj="f", curr_pos_idx=curr_pos_idx)
 
         for snake_part in snake:
             pygame.draw.rect(surface=window, color=GREEN, rect=snake_part)
 
         for i in range(len(snake) - 1, 0, -1):  # this loop updates each rectangle in snake
+            curr_pos = int((snake[i - 1].x / TILE_SIZE) * (snake[i - 1].y / TILE_SIZE))
+            prev_pos = int((snake[i].x / TILE_SIZE) * (snake[i].y / TILE_SIZE))
             snake[i] = snake[i - 1].copy()
-            update_board(board=board_array, obj="s", row=(snake[i].y / TILE_SIZE), column=(snake[i].x / TILE_SIZE))
-
+            
+        # you might not need a board array for this
         print(board_array)
-        print(len(board_array))
         pygame.draw.rect(surface=window, color=RED, rect=food)
         pygame.display.update()                 # refresh game window
         clock.tick(10)                          # 10 frames per second
@@ -105,9 +118,14 @@ def simulate_keypress(key) -> None:
     pygame.event.post(key_event)
 
 
-def update_board(board, obj: str, row: float, column: float) -> None:
-    board[int(row * column)] = obj
+def update_board_swap(board: list[str], curr_pos_idx: int, prev_pos_idx: int) -> list[str]:
+    board[curr_pos_idx], board[prev_pos_idx] = board[prev_pos_idx], board[curr_pos_idx]
+    return board
 
+
+def update_board_add(board: list[str], obj: str, curr_pos_idx: int) -> list[str]:
+    board[curr_pos_idx] = obj
+    return board
 
 # make sure that the code is being accessed from the snake.py module
 if __name__ == "__main__":
