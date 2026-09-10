@@ -3,132 +3,7 @@ import pygame
 from random import randint
 
 
-def main() -> None:
-    pygame.init()                               # initialize pygame
-    window = pygame.display.set_mode(           # display the window
-    size=(GAME_WIDTH,
-          GAME_HEIGHT)
-        )
-    pygame.display.set_caption("Snake")         # create the title of the game
-    clock = pygame.time.Clock()                 # used for frame rate
-
-    board_array = [                             # initialize a board array. I need this to extract information for input layer
-            "." for _ in range(ROWS * COLUMNS)
-            ]
-    curr_head_pos = 10 * 10                     # ROW * COLUMN
-    board_array = update_board_add(             # initialize the snake's head position in the board_array
-        board=board_array.copy(),
-        obj="s",
-        curr_pos_idx=curr_head_pos
-        )            
-    
-    # snake is going to be a list because it is made up of many rectangles
-    snake = [pygame.Rect(SNAKE_X, SNAKE_Y, TILE_SIZE, TILE_SIZE)]
-
-    # generate random x position and y position for the food such that it doesn't overlap with where the snake is
-    food_x, food_y = get_random_pos(snake)
-    food = pygame.Rect(food_x, food_y, TILE_SIZE, TILE_SIZE)
-    board_array = update_board_add(
-        board=board_array.copy(),
-        obj="f",
-        curr_pos_idx=int((food_x / TILE_SIZE) * (food_y / TILE_SIZE))
-    )
-
-    # the velocity of the snake's head
-    velocity = (0, 0)
-    
-    running = True                              # this variable controls whether the game is running or not running
-    while running:
-        window.fill(BLACK)
-        draw_grid(window=window)
-        
-        for event in pygame.event.get():        # track every event that the user can do
-            if event.type == pygame.QUIT:       # quit the game if the user clicks the X button at the top right
-                running = False
-
-            if event.type == pygame.KEYDOWN:    # check if the user pressed down a key on their keyboard
-                if (event.key == pygame.K_UP) and not (velocity == (0, TILE_SIZE)):
-                    velocity = (0, -TILE_SIZE)
-                elif (event.key == pygame.K_DOWN) and not (velocity == (0, -TILE_SIZE)):
-                    velocity = (0, TILE_SIZE)
-                elif (event.key == pygame.K_RIGHT) and not (velocity == (-TILE_SIZE, 0)):
-                    velocity = (TILE_SIZE, 0)
-                elif (event.key == pygame.K_LEFT) and not (velocity == (TILE_SIZE, 0)):
-                    velocity = (-TILE_SIZE, 0)
-
-        prev_pos = int((snake[0].x / TILE_SIZE) * (snake[0].y / TILE_SIZE))
-        snake[0].move_ip(velocity)
-        curr_head_pos = int((snake[0].x / TILE_SIZE) * (snake[0].y / TILE_SIZE))
-        board_array = update_board_swap(board=board_array.copy(), curr_pos_idx=curr_head_pos, prev_pos_idx=prev_pos)
-
-        if not (window.get_rect().contains(snake[0])):  # if the snake is outside of the board then end the game
-            running = False
-
-        if (snake[0] in snake[1:]):                     # if the snake head collides with the body then end the game
-            running = False
-
-        if snake[0].center == food.center:              # if the snake head collides with food then add to snake length
-            snake.append(food)
-            curr_pos_idx = int((food.x / TILE_SIZE) * (food.y / TILE_SIZE))
-            board_array = update_board_add(board=board_array.copy(), obj="s", curr_pos_idx=curr_pos_idx)
-
-            if len(snake) == (ROWS * COLUMNS):          # check if the snake covers the entire board
-                running = False
-            else:
-                food_x, food_y = get_random_pos(snake=snake)
-                food = pygame.Rect(food_x, food_y, TILE_SIZE, TILE_SIZE)
-                curr_pos_idx = int((food.x / TILE_SIZE) * (food.y / TILE_SIZE))
-                board_array = update_board_add(board=board_array.copy(), obj="f", curr_pos_idx=curr_pos_idx)
-
-        for snake_part in snake:
-            pygame.draw.rect(surface=window, color=GREEN, rect=snake_part)
-
-        for i in range(len(snake) - 1, 0, -1):  # this loop updates each rectangle in snake
-            curr_pos = int((snake[i - 1].x / TILE_SIZE) * (snake[i - 1].y / TILE_SIZE))
-            prev_pos = int((snake[i].x / TILE_SIZE) * (snake[i].y / TILE_SIZE))
-            snake[i] = snake[i - 1].copy()
-            
-        # you might not need a board array for this
-        print(board_array)
-        pygame.draw.rect(surface=window, color=RED, rect=food)
-        pygame.display.update()                 # refresh game window
-        clock.tick(10)                          # 10 frames per second
-
-
-def get_random_pos(snake: pygame.Rect) -> tuple[float, float]:
-    random_x, random_y = (randint(0, COLUMNS - 1) * TILE_SIZE, randint(0, ROWS - 1) * TILE_SIZE)
-
-    while (pygame.Rect(random_x, random_y, TILE_SIZE, TILE_SIZE) in snake):
-        random_x, random_y = (randint(0, COLUMNS - 1) * TILE_SIZE, randint(0, ROWS - 1) * TILE_SIZE)
-
-    return random_x, random_y
-
-
-def draw_grid(window: pygame.Surface) -> None:
-    for x in range(0, GAME_WIDTH, TILE_SIZE):
-        for y in range(0, GAME_HEIGHT, TILE_SIZE):
-            rect = pygame.Rect(x, y, TILE_SIZE, TILE_SIZE)
-            pygame.draw.rect(surface=window, color=WHITE, rect=rect, width=1)
-
-
-# if I receive a keypress from network output layer then I want to make that keypress happen in game using this function
-def simulate_keypress(key) -> None:
-    key_event = pygame.event.Event(pygame.KEYDOWN, key=key)
-
-    pygame.event.post(key_event)
-
-
-def update_board_swap(board: list[str], curr_pos_idx: int, prev_pos_idx: int) -> list[str]:
-    board[curr_pos_idx], board[prev_pos_idx] = board[prev_pos_idx], board[curr_pos_idx]
-    return board
-
-
-def update_board_add(board: list[str], obj: str, curr_pos_idx: int) -> list[str]:
-    board[curr_pos_idx] = obj
-    return board
-
-# make sure that the code is being accessed from the snake.py module
-if __name__ == "__main__":
+class Snake:
     # Constant variables:
     GAME_WIDTH = 1000
     GAME_HEIGHT = 1000
@@ -142,5 +17,128 @@ if __name__ == "__main__":
     SNAKE_X = 10 * TILE_SIZE                    # initial x position of snake's head will be a fixed constant
     SNAKE_Y = 10 * TILE_SIZE                    # initial y position of snake's head will be a fixed constant
 
-    main()
+    def __init__(self):
+        self.reset()                            # initialize instance variables using reset method
+
+    def main(self) -> None:
+        pygame.init()                               # initialize pygame
+        window = pygame.display.set_mode(           # display the window
+        size=(
+            Snake.GAME_WIDTH,
+            Snake.GAME_HEIGHT)
+        )
+        clock = pygame.time.Clock()
+
+        while self.running:
+
+            window.fill(Snake.BLACK)
+            self.draw_grid(window=window)
+            
+            for event in pygame.event.get():        # track every event that the user can do
+                if event.type == pygame.QUIT:       # quit the game if the user clicks the X button at the top right
+                    self.running = False
+    
+                if event.type == pygame.KEYDOWN:    # check if the user pressed down a key on their keyboard
+                    if (event.key == pygame.K_UP) and (self.velocity != (0, Snake.TILE_SIZE)) and not (self.turned_this_frame):
+                        self.velocity = (0, -Snake.TILE_SIZE)
+                        self.turned_this_frame = True
+                    elif (event.key == pygame.K_DOWN) and (self.velocity != (0, -Snake.TILE_SIZE)) and not (self.turned_this_frame):
+                        self.velocity = (0, Snake.TILE_SIZE)
+                        self.turned_this_frame = True
+                    elif (event.key == pygame.K_RIGHT) and (self.velocity != (-Snake.TILE_SIZE, 0)) and not (self.turned_this_frame):
+                        self.velocity = (Snake.TILE_SIZE, 0)
+                        self.turned_this_frame = True
+                    elif (event.key == pygame.K_LEFT) and (self.velocity != (Snake.TILE_SIZE, 0)) and not (self.turned_this_frame):
+                        self.velocity = (-Snake.TILE_SIZE, 0)
+                        self.turned_this_frame = True
+
+            self.snake[0].move_ip(self.velocity)                      # move the head of the snake
+            
+            if not (window.get_rect().contains(self.snake[0])):       # if the snake is outside of the board then end the game
+                self.running = False
+            
+            if (self.snake[0] in self.snake[1:]):                     # if the snake head collides with the body then end the game
+                self.running = False
+
+            if self.snake[0].center == self.food.center:              # if the snake head collides with food then add to snake length
+                self.snake.append(self.food)
+    
+                if len(self.snake) == (Snake.ROWS * Snake.COLUMNS):   # check if the snake covers the entire board
+                    self.running = False
+                else:                                                 # generate a new food in the board otherwise
+                    food_x, food_y = self.get_random_pos()
+                    self.food = pygame.Rect(food_x, food_y, Snake.TILE_SIZE, Snake.TILE_SIZE)
+
+            for snake_part in self.snake:                             # draw the snake on the board
+                pygame.draw.rect(surface=window, color=Snake.GREEN, rect=snake_part)
+    
+            for i in range(len(self.snake) - 1, 0, -1):               # this loop updates each part in snake list
+                self.snake[i] = self.snake[i - 1].copy()
+
+            self.turned_this_frame = False          # reset snake having turned this turn
+
+            pygame.draw.rect(surface=window, color=Snake.RED, rect=self.food)
+            pygame.display.update()                 # refresh game window
+            clock.tick(10)                          # 10 frames per second
+
+
+    def get_random_pos(self) -> tuple[float, float]:
+        random_x, random_y = (randint(0, Snake.COLUMNS - 1) * Snake.TILE_SIZE, randint(0, Snake.ROWS - 1) * Snake.TILE_SIZE)
+        
+        while (pygame.Rect(random_x, random_y, Snake.TILE_SIZE, Snake.TILE_SIZE) in self.snake):
+            random_x, random_y = (randint(0, Snake.COLUMNS - 1) * Snake.TILE_SIZE, randint(0, Snake.ROWS - 1) * Snake.TILE_SIZE)
+    
+        return random_x, random_y
+
+
+    def simulate_keypress(self, key) -> None:
+        key_event = pygame.event.Event(pygame.KEYDOWN, key=key)
+        
+        pygame.event.post(key_event)
+
+
+    def draw_grid(self, window: pygame.Surface) -> None:
+        for x in range(0, Snake.GAME_WIDTH, Snake.TILE_SIZE):
+            for y in range(0, Snake.GAME_HEIGHT, Snake.TILE_SIZE):
+                rect = pygame.Rect(x, y, Snake.TILE_SIZE, Snake.TILE_SIZE)
+                pygame.draw.rect(surface=window, color=Snake.WHITE, rect=rect, width=1)
+
+
+    def reset(self) -> None:
+        # snake is going to be a list because it is made up of many rectangles
+        self.snake = [pygame.Rect(Snake.SNAKE_X, Snake.SNAKE_Y, Snake.TILE_SIZE, Snake.TILE_SIZE)]
+        # the velocity of the snake's head
+        self.velocity = (0, 0)
+
+        # generate random x position and y position for the food such that it doesn't overlap with where the snake is
+        food_x, food_y = self.get_random_pos()
+        self.food = pygame.Rect(food_x, food_y, Snake.TILE_SIZE, Snake.TILE_SIZE)
+
+        # this variable is used to check if the snake has already moved
+        self.turned_this_frame = False
+        # this variable controls whether the game is running or not running
+        self.running = True
+
+        # this is the information i will be giving to the input layer of the neural network
+        self.information = [0 for _ in range(16)]
+
+
+    def get_information(self):
+        # directional information: Do one hot encoding based on which direction the snake's head is moving
+        # You can skip one of the directions because it is redundant since the degrees of freedom for direction is 3
+        if self.velocity == (0, -Snake.TILE_SIZE):
+            self.information[0] = 1
+        elif self.velocity == (0, Snake.TILE_SIZE):
+            self.information[1] = 1
+        elif self.velocity == (-Snake.TILE_SIZE, 0):
+            self.information[2] = 1
+
+        # TODO: add the remaining 13 informations for the input layer
+        
+
+# make sure that the code is being accessed from the snake.py module
+if __name__ == "__main__":
+
+    snake = Snake()
+    snake.main()
     pygame.quit()
