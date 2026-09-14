@@ -75,6 +75,12 @@ class Snake:
             for i in range(len(self.snake) - 1, 0, -1):               # this loop updates each part in snake list
                 self.snake[i] = self.snake[i - 1].copy()
 
+            if self.turned_this_frame:
+                self.get_information()                                # get all the informations
+                print(self.information)
+            else:
+                self.information = [0 for _ in range(22)]             # reset the informations for next turn
+
             self.turned_this_frame = False          # reset snake having turned this turn
 
             pygame.draw.rect(surface=window, color=Snake.RED, rect=self.food)
@@ -123,10 +129,10 @@ class Snake:
         self.running = True
 
         # this is the information i will be giving to the input layer of the neural network
-        self.information = [0 for _ in range(16)]
+        self.information = [0 for _ in range(22)]
 
 
-    def get_information(self):
+    def get_information(self) -> None:
         # Snake's head direction information: Do one hot encoding based on which direction the snake's head is moving
         # You can skip one of the directions because it is redundant since the degrees of freedom for direction is 3, this would be the approach IF my snake started automatically moving from the start
         # Which means, you cant skip any of the directions because they are all needed. At the start all the directions are 0 which means the degrees of freedom has to be 4 for direction
@@ -165,9 +171,31 @@ class Snake:
             self.information[11] = 1                # there is immediate danger to the left of the snake's head
 
         # Danger information 2: Instead of ohe i will use distance of the border to the snake's head from every direction
-        self.information[12] = self.snake_x - 0     # distance from top border
+        self.information[12] = self.snake[0].y - 0     # distance from top border
+        self.information[13] = self.snake[0].y - 1000  # distance from bottom border
+        self.information[14] = self.snake[0].x - 0     # distance from left border
+        self.information[15] = self.snake[0].x - 1000  # distance from right border
 
-        # TODO: add the remaining informations for the input layer
+        # Danger information 3: i will use distance to the closest body part from all directions
+        for i in range(0, Snake.GAME_WIDTH, Snake.TILE_SIZE):
+            if (self.snake[0].move(i, 0) in self.snake):
+                self.information[16] = self.snake[0].x - i  # distance to the body part at right
+
+        for i in range(0, Snake.GAME_WIDTH, Snake.TILE_SIZE):
+            if (self.snake[0].move(-i, 0) in self.snake):
+                self.information[17] = self.snake[0].x - i  # distance to the body part at left
+            
+        for i in range(0, Snake.GAME_HEIGHT, Snake.TILE_SIZE):
+            if (self.snake[0].move(0, i) in self.snake):
+                self.information[18] = self.snake[0].y - i  # distance to the body part at bottom
+
+        for i in range(0, Snake.GAME_HEIGHT, Snake.TILE_SIZE):
+            if (self.snake[0].move(0, -i) in self.snake):
+                self.information[19] = self.snake[0].y - i  # distance to the body part at top
+
+        # Food direction information 2: basically the x and y distance from food
+        self.information[20] = self.snake[0].x - self.food.x
+        self.information[21] = self.snake[0].y - self.food.y
         
 
 # make sure that the code is being accessed from the snake.py module
