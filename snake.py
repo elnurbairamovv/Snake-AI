@@ -77,7 +77,6 @@ class Snake:
 
             if self.turned_this_frame:
                 self.get_information()                                # get all the informations
-                print(self.information)
             else:
                 self.information = [0 for _ in range(22)]             # reset the informations for next turn
 
@@ -86,9 +85,6 @@ class Snake:
             pygame.draw.rect(surface=window, color=Snake.RED, rect=self.food)
             pygame.display.update()                 # refresh game window
             clock.tick(10)                          # 10 frames per second
-
-            print(f"snake x: {self.snake[0].x}")
-            print(f"snake y: {self.snake[0].y}")
 
 
     def get_random_pos(self) -> tuple[float, float]:
