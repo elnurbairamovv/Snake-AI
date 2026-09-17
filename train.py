@@ -8,9 +8,9 @@ from snake import Snake
 class NeuralNetwork(nn.Module):
     def __init__(self):
         super().__init__()                      # inherit from nn.Module class
-        self.flatten = nn.Flatten()             # this is used to turn a multidimensional tensor to 1d
+        self.flatten = nn.Flatten()             # this is used to turn a multidimensional tensor to a 1d tensor
         self.network_stack = nn.Sequential(     # intialize every layer and the activation functions
-            nn.Linear(22, 16),
+            nn.Linear(19, 16),
             nn.ReLU(),
             nn.Linear(16, 16),
             nn.ReLU(),
@@ -29,7 +29,6 @@ class NeuralNetwork(nn.Module):
 model = NeuralNetwork()
 
 snake_0 = Snake()
-snake_0.main()
 
-while True:
-    print(snake_0.information)
+while snake_0.running:
+    print(snake_0.get_information())
