@@ -2,6 +2,7 @@
 import torch
 import torch.nn as nn
 from snake import Snake
+from time import sleep
 
 
 # create the neural network class
@@ -14,7 +15,7 @@ class NeuralNetwork(nn.Module):
             nn.ReLU(),
             nn.Linear(16, 16),
             nn.ReLU(),
-            nn.Linear(16, 4)
+            nn.Linear(16, 3)
         )
 
     
@@ -30,5 +31,17 @@ model = NeuralNetwork()
 
 snake_0 = Snake()
 
-while snake_0.running:
-    print(snake_0.get_information())
+
+def make_prediction(model: NeuralNetwork, snake: Snake) -> int:
+    # pytorch requires inputs to the input layer to be a tensor so firstly turn the list object into a tensor object
+    tensor = torch.tensor(snake.get_information()).unsqueeze(0)
+
+    # out of all 3 predictions (straight, left, right) pick the prediction with the highest probability
+    pred = torch.argmax(model(tensor))
+
+# while snake_0.running:
+#     print(snake_0.get_information())
+#     snake_0.draw()
+
+
+make_prediction(model=model, snake=snake_0)

@@ -61,8 +61,9 @@ class Snake:
 
 
     def food_collision(self) -> None:
-        if self.snake[0].center == self.food:
-            self.snake.append(self.food)
+        if self.snake[0].center == self.food.center:
+            tail = self.snake[-1].copy()
+            self.snake.append(tail)
             # generate a new food in the board        
             food_x, food_y = self.get_random_pos()
             self.food = pygame.Rect(food_x, food_y, Snake.TILE_SIZE, Snake.TILE_SIZE)
@@ -72,7 +73,7 @@ class Snake:
 
 
     def border_collision(self) -> None:
-        if self.snake[0].x == Snake.GAME_WIDTH or self.snake[0].y == Snake.GAME_HEIGHT or self.snake[0].x == -Snake.TILE_SIZE or self.snake[0].y == -Snake.TILE_SIZE:
+        if self.snake[0].x >= Snake.GAME_WIDTH or self.snake[0].y >= Snake.GAME_HEIGHT or self.snake[0].x <= -Snake.TILE_SIZE or self.snake[0].y <= -Snake.TILE_SIZE:
             self.running = False                # if the snake collides with the border then end the game
     
 
@@ -113,7 +114,26 @@ class Snake:
 
 
     def draw(self) -> None:
-        pass
+        pygame.init()                          # initialize pygame
+        window = pygame.display.set_mode(      # define the width and height of the window
+            (Snake.GAME_WIDTH, 
+             Snake.GAME_HEIGHT))
+        window.fill(color=Snake.BLACK)
+        self.draw_grid(window=window)
+
+        for part in self.snake:                # draw the snake
+            pygame.draw.rect(surface=window, color=Snake.GREEN, rect=part)
+
+        pygame.draw.rect(surface=window, color=Snake.RED, rect=self.food)
+        
+        pygame.display.update()                # update the window
+
+
+    def draw_grid(self, window: pygame.Surface) -> None:
+        for row in range(0, Snake.GAME_HEIGHT, Snake.TILE_SIZE):
+            for col in range(0, Snake.GAME_WIDTH, Snake.TILE_SIZE):
+                rect = pygame.Rect(row, col, Snake.TILE_SIZE, Snake.TILE_SIZE)
+                pygame.draw.rect(surface=window, color=Snake.WHITE, rect=rect, width=1)
 
 
     def get_information(self) -> None:
@@ -190,24 +210,24 @@ class Snake:
         # Danger information 2: Instead of ohe i will use distance of the border to the snake's head relative to the direction snake is going
         # straight, left, right
         if information[0] == 1:                # if snake is heading up then the borders are top border, left border, and right border
-            information[11] = (self.snake[0].y - 0) / Snake.GAME_HEIGHT
-            information[12] = (self.snake[0].x - 0) / Snake.GAME_WIDTH
-            information[13] = (1000 - self.snake[0].x) / Snake.GAME_WIDTH
+            information[11] = abs((self.snake[0].y - 0)) / Snake.GAME_HEIGHT
+            information[12] = abs((self.snake[0].x - 0)) / Snake.GAME_WIDTH
+            information[13] = abs((Snake.GAME_WIDTH - self.snake[0].x)) / Snake.GAME_WIDTH
 
         elif information[1] == 1:              # if snake is heading down then the borders are down border, right border, and left border
-            information[11] = (1000 - self.snake[0].y) / Snake.GAME_HEIGHT
-            information[12] = (1000 - self.snake[0].x) / Snake.GAME_WIDTH
-            information[13] = (self.snake[0].x - 0) / Snake.GAME_WIDTH
+            information[11] = abs((Snake.GAME_HEIGHT - self.snake[0].y)) / Snake.GAME_HEIGHT
+            information[12] = abs((Snake.GAME_WIDTH - self.snake[0].x)) / Snake.GAME_WIDTH
+            information[13] = abs((self.snake[0].x - 0)) / Snake.GAME_WIDTH
 
         elif information[2] == 1:              # if snake is heading left then the borders are left border, bottom border, and top border
-            information[11] = (self.snake[0].x - 0) / Snake.GAME_WIDTH
-            information[12] = (1000 - self.snake[0].y) / Snake.GAME_HEIGHT
-            information[13] = (self.snake[0].y - 0) / Snake.GAME_HEIGHT
+            information[11] = abs((self.snake[0].x - 0)) / Snake.GAME_WIDTH
+            information[12] = abs((Snake.GAME_HEIGHT - self.snake[0].y)) / Snake.GAME_HEIGHT
+            information[13] = abs((self.snake[0].y - 0)) / Snake.GAME_HEIGHT
 
         elif information[3] == 1:              # if snake is heading right then the borders are right border, top border, and bottom border
-            information[11] = (1000 - self.snake[0].x) / Snake.GAME_WIDTH
-            information[12] = (self.snake[0].y - 0) / Snake.GAME_HEIGHT
-            information[13] = (1000 - self.snake[0].y) / Snake.GAME_HEIGHT
+            information[11] = abs((Snake.GAME_WIDTH - self.snake[0].x)) / Snake.GAME_WIDTH
+            information[12] = abs((self.snake[0].y - 0)) / Snake.GAME_HEIGHT
+            information[13] = abs((Snake.GAME_HEIGHT - self.snake[0].y)) / Snake.GAME_HEIGHT
 
 
         # Danger information 3: i will use distance to the closest body part from relative direction to snake's head
@@ -215,57 +235,57 @@ class Snake:
         if information[0] == 1:                # if snake is heading up then the body parts are top part, left part, and right part
             for i in range(0, Snake.GAME_HEIGHT, Snake.TILE_SIZE):
                 if (self.snake[0].move(0, -i) in self.snake[1:]):
-                    information[14] = (self.snake[0].y - i) / Snake.GAME_HEIGHT  # distance to the body part straight ahead
+                    information[14] = abs((self.snake[0].y - i)) / Snake.GAME_HEIGHT  # distance to the body part straight ahead
                     break
             for i in range(0, Snake.GAME_WIDTH, Snake.TILE_SIZE):
                 if (self.snake[0].move(-i, 0) in self.snake[1:]):
-                    information[15] = (self.snake[0].x - i) / Snake.GAME_WIDTH   # distance to the body part at left
+                    information[15] = abs((self.snake[0].x - i)) / Snake.GAME_WIDTH   # distance to the body part at left
                     break
             for i in range(0, Snake.GAME_WIDTH, Snake.TILE_SIZE):
                 if (self.snake[0].move(i, 0) in self.snake[1:]):
-                    information[16] = (i - self.snake[0].x) / Snake.GAME_WIDTH   # distance to the body part at right
+                    information[16] = abs((i - self.snake[0].x)) / Snake.GAME_WIDTH   # distance to the body part at right
                     break
 
         elif information[1] == 1:              # if snake is heading down then the body parts are down part, right part, and left part
             for i in range(0, Snake.GAME_HEIGHT, Snake.TILE_SIZE):
                 if (self.snake[0].move(0, i) in self.snake[1:]):
-                    information[14] = (i - self.snake[0].y) / Snake.GAME_HEIGHT  # distance to the body part straight ahead
+                    information[14] = abs((i - self.snake[0].y)) / Snake.GAME_HEIGHT  # distance to the body part straight ahead
                     break
             for i in range(0, Snake.GAME_WIDTH, Snake.TILE_SIZE):
                 if (self.snake[0].move(i, 0) in self.snake[1:]):
-                    information[15] = (i - self.snake[0].x) / Snake.GAME_WIDTH   # distance to the body part at left
+                    information[15] = abs((i - self.snake[0].x)) / Snake.GAME_WIDTH   # distance to the body part at left
                     break
             for i in range(0, Snake.GAME_WIDTH, Snake.TILE_SIZE):
                 if (self.snake[0].move(-i, 0) in self.snake[1:]):
-                    information[16] = (self.snake[0].x - i) / Snake.GAME_WIDTH   # distance to the body part at right
+                    information[16] = abs((self.snake[0].x - i)) / Snake.GAME_WIDTH   # distance to the body part at right
                     break
 
         elif information[2] == 1:              # if snake is heading left then the body parts are left part, bottom part, and top part
             for i in range(0, Snake.GAME_WIDTH, Snake.TILE_SIZE):
                 if (self.snake[0].move(-i, 0) in self.snake[1:]):
-                    information[14] = (self.snake[0].x - i) / Snake.GAME_WIDTH   # distance to the body part straight ahead
+                    information[14] = abs((self.snake[0].x - i)) / Snake.GAME_WIDTH   # distance to the body part straight ahead
                     break
             for i in range(0, Snake.GAME_HEIGHT, Snake.TILE_SIZE):
                 if (self.snake[0].move(0, i) in self.snake[1:]):
-                    information[15] = (i - self.snake[0].y) / Snake.GAME_HEIGHT  # distance to the body at left
+                    information[15] = abs((i - self.snake[0].y)) / Snake.GAME_HEIGHT  # distance to the body at left
                     break
             for i in range(0, Snake.GAME_HEIGHT, Snake.TILE_SIZE):
                 if (self.snake[0].move(0, -i) in self.snake[1:]):
-                    information[16] = (self.snake[0].y - i) / Snake.GAME_HEIGHT  # distance to the body part at right
+                    information[16] = abs((self.snake[0].y - i)) / Snake.GAME_HEIGHT  # distance to the body part at right
                     break
 
         elif information[3] == 1:              # if snake is heading right then the body parts are right part, top part, and bottom part
             for i in range(0, Snake.GAME_WIDTH, Snake.TILE_SIZE):
                 if (self.snake[0].move(i, 0) in self.snake[1:]):
-                    information[14] = (i - self.snake[0].x) / Snake.GAME_WIDTH   # distance to the body part straight ahead
+                    information[14] = abs((i - self.snake[0].x)) / Snake.GAME_WIDTH   # distance to the body part straight ahead
                     break  
             for i in range(0, Snake.GAME_HEIGHT, Snake.TILE_SIZE):
                 if (self.snake[0].move(0, -i) in self.snake[1:]):
-                    information[15] = (self.snake[0].y - i) / Snake.GAME_HEIGHT  # distance to the body part at left
+                    information[15] = abs((self.snake[0].y - i)) / Snake.GAME_HEIGHT  # distance to the body part at left
                     break 
             for i in range(0, Snake.GAME_HEIGHT, Snake.TILE_SIZE):
                 if (self.snake[0].move(0, i) in self.snake[1:]):
-                    information[16] = (i - self.snake[0].y) / Snake.GAME_HEIGHT  # distance to the body part at right
+                    information[16] = abs((i - self.snake[0].y)) / Snake.GAME_HEIGHT  # distance to the body part at right
                     break
 
         # Food direction information 2: basically the x and y distance from food
