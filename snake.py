@@ -42,14 +42,41 @@ class Snake:
 
 
     def apply_action(self, action: int) -> None:
-        if action == 0 and self.velocity != (0, Snake.TILE_SIZE):
-            self.velocity = (0, -Snake.TILE_SIZE)
-        elif action == 1 and self.velocity != (0, -Snake.TILE_SIZE):
-            self.velocity = (0, Snake.TILE_SIZE)
-        elif action == 2 and self.velocity != (-Snake.TILE_SIZE, 0):
-            self.velocity = (Snake.TILE_SIZE, 0)
-        elif action == 3 and self.velocity != (Snake.TILE_SIZE, 0):
-            self.velocity = (-Snake.TILE_SIZE, 0)
+        if self.velocity == (0, -Snake.TILE_SIZE):      # if snake is going up then straight is up, left is left, and right is right
+            if action == 0:
+                pass
+            elif action == 1:
+                self.velocity = (-Snake.TILE_SIZE, 0)
+            elif action == 2:
+                self.velocity = (Snake.TILE_SIZE, 0)
+        elif self.velocity == (0, Snake.TILE_SIZE):     # if snake is going down then straight is down, left is right, and right is left
+            if action == 0:
+                pass
+            elif action == 1:
+                self.velocity = (Snake.TILE_SIZE, 0)
+            elif action == 2:
+                self.velocity = (-Snake.TILE_SIZE, 0)
+        elif self.velocity == (Snake.TILE_SIZE, 0):     # if snake is going right then straight is right, left is top, and right is bottom
+            if action == 0:
+                pass
+            elif action == 1:
+                self.velocity = (0, -Snake.TILE_SIZE)
+            elif action == 2:
+                self.velocity = (0, Snake.TILE_SIZE)
+        elif self.velocity == (-Snake.TILE_SIZE, 0):    # if snake is going left then straight is left, left is down, and right is top
+            if action == 0:
+                pass
+            elif action == 1:
+                self.velocity = (0, Snake.TILE_SIZE)
+            elif action == 2:
+                self.velocity = (0, -Snake.TILE_SIZE)
+        else:                                           # this is for the case where velocity = (0, 0) lets treat it the same as velocity = (Snake.TILE_SIZE, 0) case because i don't know what else to do
+            if action == 0:
+                self.velocity = (Snake.TILE_SIZE, 0)
+            elif action == 1:
+                self.velocity = (0, -Snake.TILE_SIZE)
+            elif action == 2:
+                self.velocity = (0, Snake.TILE_SIZE)
 
 
     def update_body(self) -> None:
