@@ -12,9 +12,9 @@ class NeuralNetwork(nn.Module):
         self.flatten = nn.Flatten()             # this is used to turn a multidimensional tensor to a 1d tensor
         self.network_stack = nn.Sequential(     # intialize every layer and the activation functions
             nn.Linear(19, 16),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(16, 16),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(16, 3)
         )
 
@@ -24,12 +24,6 @@ class NeuralNetwork(nn.Module):
         logits = self.network_stack(x)          # get the raw values of output layer without using any activation function on the output layer
 
         return logits
-
-
-
-model = NeuralNetwork()
-
-snake_0 = Snake()
 
 
 def make_prediction(model: NeuralNetwork, snake: Snake) -> int:
@@ -44,7 +38,18 @@ def make_prediction(model: NeuralNetwork, snake: Snake) -> int:
 
     return int(pred)
 
-while snake_0.running:
-    snake_0.step(action=make_prediction(model=model, snake=snake_0))
-    snake_0.draw()
-    sleep(0.4)
+
+def fitness_function(snake):
+    # something like: survival + apples eaten - steps since not having eaten
+    pass
+
+# checks if the module is being accessed from train.py. doing this because I dont want train.py to mess up evaluate.py
+if __name__ == "__main__":
+    model = NeuralNetwork()
+
+    snake_0 = Snake()
+
+    while snake_0.running:
+        snake_0.step(action=make_prediction(model=model, snake=snake_0))
+        snake_0.draw()
+        sleep(0.4)
