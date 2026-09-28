@@ -86,6 +86,8 @@ class Snake:
         for i in range(1, len(self.snake)):
             self.snake[i] = old_positions[i - 1]
 
+        self.steps += 1
+
 
     def food_collision(self) -> None:
         if self.snake[0].center == self.food.center:
@@ -138,6 +140,9 @@ class Snake:
 
         # this variable is to check how many steps the snake has taken since having eaten
         self.steps_since_eaten = 0
+
+        # total steps the snake has taken
+        self.steps = 0
 
 
     def draw(self) -> None:

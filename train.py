@@ -39,9 +39,8 @@ def make_prediction(model: NeuralNetwork, snake: Snake) -> int:
     return int(pred)
 
 
-def fitness_function(snake):
-    # something like: survival + apples eaten - steps since not having eaten
-    pass
+def fitness_function(snake: Snake) -> float:
+    return (snake.steps + pow(2, len(snake.snake)) - snake.steps_since_eaten)
 
 # checks if the module is being accessed from train.py. doing this because I dont want train.py to mess up evaluate.py
 if __name__ == "__main__":
