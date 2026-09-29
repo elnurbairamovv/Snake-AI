@@ -40,15 +40,58 @@ def make_prediction(model: NeuralNetwork, snake: Snake) -> int:
 
 
 def fitness_function(snake: Snake) -> float:
-    return (snake.steps + pow(2, len(snake.snake)) - snake.steps_since_eaten)
+    return (snake.steps * snake.steps * pow(2, len(snake.snake)))
+
+
+def main(pop_n: int) -> None:
+    # initialize the population of snakes and the neural networks that each snake gets
+    population = [(Snake(), NeuralNetwork()) for _ in range(pop_n)]
+    curr_gen = 1
+
+    while True:
+
+        for snake, model in population:
+            if snake.running:
+                snake.step(action=make_prediction(model=model, snake=snake))
+
+        if population_dead(population=population):  # check if every snake in the population is dead
+            fitnesses = get_fitnesses(population=population)
+
+            display_stats(fitnesses=fitnesses, curr_gen=curr_gen)
+
+            break
+
+
+def population_dead(population: list[tuple[Snake, NeuralNetwork]]) -> bool:
+    all_dead = True                                 # use this variable to check if every snake is dead
+
+    for snake, _ in population:
+        if snake.running:
+            all_dead = False                        # if at least one snake is alive then set all_dead = False and break because every snake is not dead
+            break
+
+    return all_dead
+
+
+def display_stats(fitnesses: list[int], curr_gen: int) -> None:
+    print("\n" + "=" * 14 + " Stats " + "=" * 14)
+    print(f"Current Generation: {curr_gen}")
+    print(f"Population Size: {len(fitnesses)}")
+    print(f"Average Fitness: {(sum(fitnesses) / len(fitnesses)): 0.2f}")
+    print(f"Best Fitness: {max(fitnesses)}")
+    print(f"Worst Fitness: {min(fitnesses)}")
+    print("=" * 35 + "\n")
+
+
+def get_fitnesses(population: list[tuple[Snake, NeuralNetwork]]) -> list[int]:
+    fitnesses = []
+
+    for snake, _ in population:
+        fitnesses.append(fitness_function(snake=snake))
+
+    return fitnesses
+
 
 # checks if the module is being accessed from train.py. doing this because I dont want train.py to mess up evaluate.py
 if __name__ == "__main__":
-    model = NeuralNetwork()
-
-    snake_0 = Snake()
-
-    while snake_0.running:
-        snake_0.step(action=make_prediction(model=model, snake=snake_0))
-        snake_0.draw()
-        sleep(0.4)
+    main(pop_n=100)
