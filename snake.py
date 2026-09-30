@@ -144,6 +144,9 @@ class Snake:
         # total steps the snake has taken
         self.steps = 0
 
+        # the fitness of an individual snake
+        self.fitness = 0
+
 
     def draw(self) -> None:
         pygame.init()                          # initialize pygame

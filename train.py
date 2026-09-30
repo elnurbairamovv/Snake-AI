@@ -3,6 +3,8 @@ import torch
 import torch.nn as nn
 from snake import Snake
 from time import sleep
+import numpy as np
+from random import choice
 
 
 # create the neural network class
@@ -43,12 +45,12 @@ def fitness_function(snake: Snake) -> float:
     return (snake.steps * snake.steps * pow(2, len(snake.snake)))
 
 
-def main(pop_n: int) -> None:
+def main(pop_n: int, gen_n: int) -> None:
     # initialize the population of snakes and the neural networks that each snake gets
     population = [(Snake(), NeuralNetwork()) for _ in range(pop_n)]
     curr_gen = 1
 
-    while True:
+    while curr_gen <= gen_n:
 
         for snake, model in population:
             if snake.running:
@@ -58,6 +60,16 @@ def main(pop_n: int) -> None:
             fitnesses = get_fitnesses(population=population)
 
             display_stats(fitnesses=fitnesses, curr_gen=curr_gen)
+
+            # TODO: breed the neural networks
+            # 1. start with the selection process (done)
+            population = selection(population)
+            # 2. get the weights of each network
+            # variable(s) needed: weights (containing every weight but flattened so you can do indexing easily)
+            # 3. finish the crossover function
+
+            # NOTE: if u want to update a network's weights manually then use model.fc.weight along with torch.no_grad()
+            # also you'll prob have to do some experimentation with model.fc.weight
 
             break
 
@@ -87,11 +99,22 @@ def get_fitnesses(population: list[tuple[Snake, NeuralNetwork]]) -> list[int]:
     fitnesses = []
 
     for snake, _ in population:
-        fitnesses.append(fitness_function(snake=snake))
+        snake.fitness = fitness_function(snake=snake)
+        fitnesses.append(snake.fitness)
 
     return fitnesses
 
 
+def selection(population: list[tuple[Snake, NeuralNetwork]]) -> list[tuple[Snake, NeuralNetwork]]:
+    # sort the population based on each snake fitness
+    population = sorted(population, key=lambda pop: pop[0].fitness, reverse=True)
+
+    # slice the population to 20% its original size
+    population = population[:int(0.2 * len(population))]
+
+    return population
+
+
 # checks if the module is being accessed from train.py. doing this because I dont want train.py to mess up evaluate.py
 if __name__ == "__main__":
-    main(pop_n=100)
+    main(pop_n=100, gen_n=20)
