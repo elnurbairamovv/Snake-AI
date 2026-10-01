@@ -4,7 +4,7 @@ import torch.nn as nn
 from snake import Snake
 from time import sleep
 import numpy as np
-from random import choice
+from random import randint
 
 
 # create the neural network class
@@ -65,9 +65,9 @@ def main(pop_n: int, gen_n: int) -> None:
             # 1. start with the selection process (done)
             population = selection(population)
             # 2. get the weights of each network
-            # variable(s) needed: weights (containing every weight but flattened so you can do indexing easily)
+            weights, shapes = get_weights(population)
             # 3. finish the crossover function
-
+            population = crossover(population, weights, shapes)
             # NOTE: if u want to update a network's weights manually then use model.fc.weight along with torch.no_grad()
             # also you'll prob have to do some experimentation with model.fc.weight
 
@@ -113,6 +113,45 @@ def selection(population: list[tuple[Snake, NeuralNetwork]]) -> list[tuple[Snake
     population = population[:int(0.2 * len(population))]
 
     return population
+
+
+def get_weights(population: list[tuple[Snake, NeuralNetwork]]) -> tuple[list[list], list]:
+    all_weights = []
+    shapes = []
+
+    for _, model in population:
+        # collect the weights of each layer for an individual model into a list
+        temp_weights = [param.detach().cpu().numpy().flatten() for param in model.parameters()]
+
+        # concatenate all the weights into one big list
+        temp_weights = np.concat(temp_weights)
+
+        # append all the weights of one individual model to the list
+        all_weights.append(temp_weights)
+
+    # after i merge two parent weights together I'll have to reshape it to its original tensor shapes. in order to do that I have to save the original shapes
+    # btw i already checked but, all the models have same shapes for their layers so i can just use the shape of the first model in the list
+    for param in population[0][1].parameters():
+        shapes.append(param.shape)
+
+    return all_weights, shapes
+
+
+def crossover(population: list[tuple[Snake, NeuralNetwork]]) -> list[tuple[Snake, NeuralNetwork]]:
+    weights, shapes = get_weights(population)       # get the weights of every model but flatten them to make indexing easier and get their shapes so you can reshape them at the end
+
+    for snake, model in population:
+        snake.reset()                               # reinitialize the snake
+
+        # select the two parent weights. its okay to select with replacement
+        parent_1_weight = weights[randint(0, len(weights) - 1)]
+        parent_2_weight = weights[randint(0, len(weights) - 1)]
+
+        # its fine to select either parent since the shapes are all the same. basically i am gonna merge two parent weights using slicing
+        crossover_point = randint(0, parent_1_weight)
+
+        child_1_weight = np.concat([parent_1_weight[crossover_point:], parent_2_weight[:crossover_point]])
+        child_2_weight = np.concat([parent_1_weight[crossover_point:], parent_2_weight[:crossover_point]])
 
 
 # checks if the module is being accessed from train.py. doing this because I dont want train.py to mess up evaluate.py
