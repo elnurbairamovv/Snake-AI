@@ -140,9 +140,9 @@ def get_weights(population: list[tuple[Snake, NeuralNetwork]]) -> tuple[list[lis
 def crossover(population: list[tuple[Snake, NeuralNetwork]]) -> list[tuple[Snake, NeuralNetwork]]:
     weights, shapes = get_weights(population)       # get the weights of every model but flatten them to make indexing easier and get their shapes so you can reshape them at the end
 
-    for snake, model in population:
-        snake.reset()                               # reinitialize the snake
+    child_weights = []
 
+    for _ in range(np.ceil(len(weights) / 2)):
         # select the two parent weights. its okay to select with replacement
         parent_1_weight = weights[randint(0, len(weights) - 1)]
         parent_2_weight = weights[randint(0, len(weights) - 1)]
@@ -151,8 +151,18 @@ def crossover(population: list[tuple[Snake, NeuralNetwork]]) -> list[tuple[Snake
         crossover_point = randint(0, parent_1_weight)
 
         child_1_weight = np.concat([parent_1_weight[crossover_point:], parent_2_weight[:crossover_point]])
-        child_2_weight = np.concat([parent_1_weight[crossover_point:], parent_2_weight[:crossover_point]])
+        child_2_weight = np.concat([parent_2_weight[crossover_point:], parent_1_weight[:crossover_point]])
 
+        child_weights.append(child_1_weight)
+        child_weights.append(child_2_weight)
+
+    for i in range(len(weights)):
+        weights[i] = child_weights[i]
+
+    for i, (snake, model) in enumerate(population):
+        snake.reset()                               # reinitialize all the snakes
+
+        
 
 # checks if the module is being accessed from train.py. doing this because I dont want train.py to mess up evaluate.py
 if __name__ == "__main__":
