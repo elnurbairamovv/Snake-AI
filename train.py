@@ -137,18 +137,18 @@ def get_weights(population: list[tuple[Snake, NeuralNetwork]]) -> tuple[list[lis
     return all_weights, shapes
 
 
-def crossover(population: list[tuple[Snake, NeuralNetwork]]) -> list[tuple[Snake, NeuralNetwork]]:
+def crossover(population: list[tuple[Snake, NeuralNetwork]], weights: list[list], shapes: list) -> list[tuple[Snake, NeuralNetwork]]:
     weights, shapes = get_weights(population)       # get the weights of every model but flatten them to make indexing easier and get their shapes so you can reshape them at the end
 
     child_weights = []
 
-    for _ in range(np.ceil(len(weights) / 2)):
+    for _ in range(int(np.ceil(len(weights) / 2))):
         # select the two parent weights. its okay to select with replacement
         parent_1_weight = weights[randint(0, len(weights) - 1)]
         parent_2_weight = weights[randint(0, len(weights) - 1)]
 
         # its fine to select either parent since the shapes are all the same. basically i am gonna merge two parent weights using slicing
-        crossover_point = randint(0, parent_1_weight)
+        crossover_point = randint(0, len(parent_1_weight) - 1)
 
         child_1_weight = np.concat([parent_1_weight[crossover_point:], parent_2_weight[:crossover_point]])
         child_2_weight = np.concat([parent_2_weight[crossover_point:], parent_1_weight[:crossover_point]])
@@ -162,6 +162,20 @@ def crossover(population: list[tuple[Snake, NeuralNetwork]]) -> list[tuple[Snake
     for i, (snake, model) in enumerate(population):
         snake.reset()                               # reinitialize all the snakes
 
+        print(len(weights[i]))
+        # my shapes list contains dimensions that are not flat (e.g 16x19 is 2d not 1d) and my weight list contains many weights that are 1d
+        # those 1d weights contain every single weights for a network. This includes every single layers in the network
+        # the goal is to slice those weight lists according to dimensions in the shape list. I can multiply the dimensions of the elements in shape using numel() method
+        # after i multiply the dimensions the dimensions will be in an appropriate format to slice a 1d list. Also remember there are multiple layers
+        starting_idx = 0
+        for shape in shapes:
+            curr_tensor = torch.Tensor(weights[i][(starting_idx):(starting_idx + shape.numel())]).reshape(shape)
+            starting_idx += shape.numel()
+
+            print(len(curr_tensor))
+            print(curr_tensor)
+
+        break
         
 
 # checks if the module is being accessed from train.py. doing this because I dont want train.py to mess up evaluate.py
