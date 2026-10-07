@@ -63,15 +63,11 @@ def main(pop_n: int, gen_n: int) -> None:
 
             # TODO: breed the neural networks
             # 1. start with the selection process (done)
-            population = selection(population)
-            # 2. get the weights of each network
-            weights, shapes = get_weights(population)
-            # 3. finish the crossover function
-            population = crossover(population, weights, shapes)
-            # NOTE: if u want to update a network's weights manually then use model.fc.weight along with torch.no_grad()
-            # also you'll prob have to do some experimentation with model.fc.weight
+            selected_pop = selection(population)
+            # 2. finish the crossover function (too many bugs twin)
+            population = crossover(population, selected_pop, pop_n)
 
-            break
+            curr_gen += 1
 
 
 def population_dead(population: list[tuple[Snake, NeuralNetwork]]) -> bool:
@@ -137,12 +133,13 @@ def get_weights(population: list[tuple[Snake, NeuralNetwork]]) -> tuple[list[lis
     return all_weights, shapes
 
 
-def crossover(population: list[tuple[Snake, NeuralNetwork]], weights: list[list], shapes: list) -> list[tuple[Snake, NeuralNetwork]]:
-    weights, shapes = get_weights(population)       # get the weights of every model but flatten them to make indexing easier and get their shapes so you can reshape them at the end
+def crossover(population: list[tuple[Snake, NeuralNetwork]], selected_population: list[tuple[Snake, NeuralNetwork]], pop_n: int) -> list[tuple[Snake, NeuralNetwork]]:
+    # get the weights of every model but flatten them to make indexing easier and get their shapes so you can reshape them at the end
+    weights, shapes = get_weights(selected_population)
 
     child_weights = []
 
-    for _ in range(int(np.ceil(len(weights) / 2))):
+    for _ in range(int(np.ceil(pop_n / 2))):
         # select the two parent weights. its okay to select with replacement
         parent_1_weight = weights[randint(0, len(weights) - 1)]
         parent_2_weight = weights[randint(0, len(weights) - 1)]
@@ -156,28 +153,30 @@ def crossover(population: list[tuple[Snake, NeuralNetwork]], weights: list[list]
         child_weights.append(child_1_weight)
         child_weights.append(child_2_weight)
 
-    for i in range(len(weights)):
-        weights[i] = child_weights[i]
-
     for i, (snake, model) in enumerate(population):
         snake.reset()                               # reinitialize all the snakes
 
-        print(len(weights[i]))
         # my shapes list contains dimensions that are not flat (e.g 16x19 is 2d not 1d) and my weight list contains many weights that are 1d
         # those 1d weights contain every single weights for a network. This includes every single layers in the network
         # the goal is to slice those weight lists according to dimensions in the shape list. I can multiply the dimensions of the elements in shape using numel() method
         # after i multiply the dimensions the dimensions will be in an appropriate format to slice a 1d list. Also remember there are multiple layers
         starting_idx = 0
-        for shape in shapes:
-            curr_tensor = torch.Tensor(weights[i][(starting_idx):(starting_idx + shape.numel())]).reshape(shape)
+        temp = []
+        for _, param in model.named_parameters():
+            temp.append(param)
+
+        for j, shape in enumerate(shapes):
+            curr_tensor = torch.Tensor(child_weights[i][(starting_idx):(starting_idx + shape.numel())]).reshape(shape)
             starting_idx += shape.numel()
 
-            print(len(curr_tensor))
-            print(curr_tensor)
+            temp[j].data = curr_tensor
 
-        break
+        for i, (_, param) in enumerate(model.named_parameters()):
+            temp[i] = param
+
+    return population
         
 
 # checks if the module is being accessed from train.py. doing this because I dont want train.py to mess up evaluate.py
 if __name__ == "__main__":
-    main(pop_n=100, gen_n=20)
+    main(pop_n=100, gen_n=100)
