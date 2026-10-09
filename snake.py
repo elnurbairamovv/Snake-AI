@@ -82,6 +82,7 @@ class Snake:
     def update_body(self) -> None:
         old_positions = [snake_part.copy() for snake_part in self.snake]
         self.snake[0].move_ip(self.velocity)
+        self.last_snake_tail = old_positions[-1].copy()
 
         for i in range(1, len(self.snake)):
             self.snake[i] = old_positions[i - 1]
@@ -91,8 +92,7 @@ class Snake:
 
     def food_collision(self) -> None:
         if self.snake[0].center == self.food.center:
-            tail = self.snake[-1].copy()
-            self.snake.append(tail)
+            self.snake.append(self.last_snake_tail)
             # generate a new food in the board        
             food_x, food_y = self.get_random_pos()
             self.food = pygame.Rect(food_x, food_y, Snake.TILE_SIZE, Snake.TILE_SIZE)
@@ -126,8 +126,13 @@ class Snake:
 
 
     def reset(self) -> None:
+        # initialize pygame
+        pygame.init()
+
         # snake is going to be a list because it is made up of many rectangles
         self.snake = [pygame.Rect(Snake.SNAKE_X, Snake.SNAKE_Y, Snake.TILE_SIZE, Snake.TILE_SIZE)]
+        # I need this variable to update the body properly
+        self.last_snake_tail = self.snake[-1].copy()
         # the velocity of the snake's head
         self.velocity = (0, 0)
 
@@ -149,7 +154,6 @@ class Snake:
 
 
     def draw(self) -> None:
-        pygame.init()                          # initialize pygame
         window = pygame.display.set_mode(      # define the width and height of the window
             (Snake.GAME_WIDTH, 
              Snake.GAME_HEIGHT))

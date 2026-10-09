@@ -42,7 +42,7 @@ def make_prediction(model: NeuralNetwork, snake: Snake) -> int:
 
 
 def fitness_function(snake: Snake) -> float:
-    return (snake.steps * snake.steps * pow(2, len(snake.snake)))
+    return (snake.steps * snake.steps * pow(2, len(snake.snake)) - snake.steps_since_eaten * snake.steps_since_eaten * pow(2, len(snake.snake)))
 
 
 def main(pop_n: int, gen_n: int) -> None:
@@ -64,8 +64,11 @@ def main(pop_n: int, gen_n: int) -> None:
             # TODO: breed the neural networks
             # 1. start with the selection process (done)
             selected_pop = selection(population)
+            best_snake = selected_pop[0]
             # 2. finish the crossover function (too many bugs twin)
             population = crossover(population, selected_pop, pop_n)
+
+            evaluate_best(snake=best_snake)
 
             curr_gen += 1
 
@@ -161,20 +164,32 @@ def crossover(population: list[tuple[Snake, NeuralNetwork]], selected_population
         # the goal is to slice those weight lists according to dimensions in the shape list. I can multiply the dimensions of the elements in shape using numel() method
         # after i multiply the dimensions the dimensions will be in an appropriate format to slice a 1d list. Also remember there are multiple layers
         starting_idx = 0
-        temp = []
-        for _, param in model.named_parameters():
-            temp.append(param)
 
-        for j, shape in enumerate(shapes):
-            curr_tensor = torch.Tensor(child_weights[i][(starting_idx):(starting_idx + shape.numel())]).reshape(shape)
-            starting_idx += shape.numel()
+        # i am using torch.no_grad() so that pytorch doesn't calculate any gradients in the background. this speeds up the performance
+        # I don't need the gradients because I am not training my network via a backward pass. I am training my network via evolution. they are different
+        with torch.no_grad():
+            for (param, shape) in zip(model.parameters(), shapes):
+                # create the new tensor that was taken from child_weights
+                curr_tensor = torch.Tensor(child_weights[i][(starting_idx):(starting_idx + shape.numel())]).reshape(shape)
+                # update the starting index
+                starting_idx += shape.numel()
 
-            temp[j].data = curr_tensor
-
-        for i, (_, param) in enumerate(model.named_parameters()):
-            temp[i] = param
+                # replace the parameter tensor with the current tensor
+                param.copy_(curr_tensor)
 
     return population
+
+
+def evaluate_best(snake: tuple[Snake, NeuralNetwork]) -> None:
+    snake[0].reset()
+
+    while True:
+        if snake[0].running:
+            snake[0].draw()
+            snake[0].step(action=make_prediction(model=snake[1], snake=snake[0]))
+            sleep(0.025)
+        else:
+            break
         
 
 # checks if the module is being accessed from train.py. doing this because I dont want train.py to mess up evaluate.py
