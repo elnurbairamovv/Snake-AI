@@ -42,10 +42,10 @@ def make_prediction(model: NeuralNetwork, snake: Snake) -> int:
 
 
 def fitness_function(snake: Snake) -> float:
-    return (snake.steps * snake.steps * pow(2, len(snake.snake)) - snake.steps_since_eaten * snake.steps_since_eaten * pow(2, len(snake.snake)))
+    return (snake.steps * snake.steps * pow(2, len(snake.snake)) - snake.steps * snake.steps * snake.steps_since_eaten)
 
 
-def main(pop_n: int, gen_n: int) -> None:
+def main(pop_n: int, gen_n: int, mutation_prob: float) -> None:
     # initialize the population of snakes and the neural networks that each snake gets
     population = [(Snake(), NeuralNetwork()) for _ in range(pop_n)]
     curr_gen = 1
@@ -66,7 +66,7 @@ def main(pop_n: int, gen_n: int) -> None:
             selected_pop = selection(population)
             best_snake = selected_pop[0]
             # 2. finish the crossover function (too many bugs twin)
-            population = crossover(population, selected_pop, pop_n)
+            population = crossover(population, selected_pop, pop_n, mutation_prob)
 
             evaluate_best(snake=best_snake)
 
@@ -136,7 +136,7 @@ def get_weights(population: list[tuple[Snake, NeuralNetwork]]) -> tuple[list[lis
     return all_weights, shapes
 
 
-def crossover(population: list[tuple[Snake, NeuralNetwork]], selected_population: list[tuple[Snake, NeuralNetwork]], pop_n: int) -> list[tuple[Snake, NeuralNetwork]]:
+def crossover(population: list[tuple[Snake, NeuralNetwork]], selected_population: list[tuple[Snake, NeuralNetwork]], pop_n: int, mutation_prob: float) -> list[tuple[Snake, NeuralNetwork]]:
     # get the weights of every model but flatten them to make indexing easier and get their shapes so you can reshape them at the end
     weights, shapes = get_weights(selected_population)
 
@@ -152,6 +152,8 @@ def crossover(population: list[tuple[Snake, NeuralNetwork]], selected_population
 
         child_1_weight = np.concat([parent_1_weight[crossover_point:], parent_2_weight[:crossover_point]])
         child_2_weight = np.concat([parent_2_weight[crossover_point:], parent_1_weight[:crossover_point]])
+
+        child_1_weight = mutation(child_1_weight, mutation_prob, mutation_std=np.array(child_1_weight).std())
 
         child_weights.append(child_1_weight)
         child_weights.append(child_2_weight)
@@ -180,6 +182,13 @@ def crossover(population: list[tuple[Snake, NeuralNetwork]], selected_population
     return population
 
 
+def mutation(child_weight: list, mutation_prob: float, mutation_std: float) -> list:
+    if np.random.rand() < mutation_prob:
+        child_weight += np.random.normal(0, mutation_std)
+
+    return child_weight
+
+
 def evaluate_best(snake: tuple[Snake, NeuralNetwork]) -> None:
     snake[0].reset()
 
@@ -194,4 +203,4 @@ def evaluate_best(snake: tuple[Snake, NeuralNetwork]) -> None:
 
 # checks if the module is being accessed from train.py. doing this because I dont want train.py to mess up evaluate.py
 if __name__ == "__main__":
-    main(pop_n=100, gen_n=100)
+    main(pop_n=100, gen_n=1000, mutation_prob=0.30)
