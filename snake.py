@@ -152,6 +152,9 @@ class Snake:
         # the fitness of an individual snake
         self.fitness = 0
 
+        # if the snake is looping and not exploring the board then set this equal to true. I need this for giving the snake a punishment for not exploring
+        self.looping = 0
+
 
     def draw(self) -> None:
         window = pygame.display.set_mode(      # define the width and height of the window
