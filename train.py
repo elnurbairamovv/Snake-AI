@@ -42,23 +42,34 @@ def make_prediction(model: NeuralNetwork, snake: Snake) -> int:
 
 
 def fitness_function(snake: Snake) -> float:
-    return (snake.steps + (len(snake.snake) - 1) * 100 - snake.steps_since_eaten - snake.looping * 40)
+    return (snake.steps + len(snake.explored_squares) + (len(snake.snake) - 1) * 200 - snake.steps_since_eaten - snake.looping * 150)
 
 
 def main(pop_n: int, gen_n: int, mutation_prob: float) -> None:
     # initialize the population of snakes and the neural networks that each snake gets
     population = [(Snake(), NeuralNetwork()) for _ in range(pop_n)]
-    action_list = []
+    action_dict = {}
     curr_gen = 1
 
     while curr_gen <= gen_n:
 
-        for snake, model in population:
+        for i, (snake, model) in enumerate(population):
             if snake.running:
+                snake.explored_squares.add((snake.snake[0].x, snake.snake[0].y, snake.snake[0].width, snake.snake[0].height))
+
                 action = make_prediction(model=model, snake=snake)
+
+                # I need to store all the snake's actions somewhere to see if a particular snake is looping or not
+                if len(action_dict) < len(population):
+                    action_dict[f"Snake_{i}"] = [action]
+                else:
+                    action_dict[f"Snake_{i}"].append(action)
+
                 snake.step(action=action)
 
         if population_dead(population=population):  # check if every snake in the population is dead
+            population = check_looping(population=population, action_dict=action_dict)
+
             fitnesses = get_fitnesses(population=population)
 
             display_stats(fitnesses=fitnesses, curr_gen=curr_gen)
@@ -204,8 +215,28 @@ def evaluate_best(snake: tuple[Snake, NeuralNetwork], sleep_dur: float) -> None:
             sleep(sleep_dur)
         else:
             break
+
+
+def check_looping(population: list[tuple[Snake, NeuralNetwork]], action_dict: dict) -> list[tuple[Snake, NeuralNetwork]]:
+    repeat_counter = 0
+    prev_action = -1
+
+    for ((snake, _), actions) in zip(population, action_dict.values()):
+        for action in actions:
+            if action == prev_action:
+                repeat_counter += 1
+            else:
+                prev_action = action
+
+        if repeat_counter == 10:
+            snake.looping = 1
+
+        repeat_counter = 0
+        prev_action = -1
+
+    return population
         
 
 # checks if the module is being accessed from train.py. doing this because I dont want train.py to mess up evaluate.py
 if __name__ == "__main__":
-    main(pop_n=200, gen_n=80, mutation_prob=0.35)
+    main(pop_n=300, gen_n=80, mutation_prob=0.30)
