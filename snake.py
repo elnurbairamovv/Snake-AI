@@ -347,3 +347,4 @@ class Snake:
 # make sure that the code is being accessed from the snake.py module
 if __name__ == "__main__":
     pygame.quit()
+    

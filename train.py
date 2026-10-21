@@ -42,7 +42,7 @@ def make_prediction(model: NeuralNetwork, snake: Snake) -> int:
 
 
 def fitness_function(snake: Snake) -> float:
-    return (snake.steps + len(snake.explored_squares) + (len(snake.snake) - 1) * 200 - snake.steps_since_eaten - snake.looping * 150)
+    return (len(snake.explored_squares) * 50 + pow(2, (len(snake.snake) - 1)) * 100 - snake.steps_since_eaten * 20 - snake.looping * 500)
 
 
 def main(pop_n: int, gen_n: int, mutation_prob: float) -> None:
@@ -55,8 +55,6 @@ def main(pop_n: int, gen_n: int, mutation_prob: float) -> None:
 
         for i, (snake, model) in enumerate(population):
             if snake.running:
-                snake.explored_squares.add((snake.snake[0].x, snake.snake[0].y, snake.snake[0].width, snake.snake[0].height))
-
                 action = make_prediction(model=model, snake=snake)
 
                 # I need to store all the snake's actions somewhere to see if a particular snake is looping or not
@@ -66,6 +64,8 @@ def main(pop_n: int, gen_n: int, mutation_prob: float) -> None:
                     action_dict[f"Snake_{i}"].append(action)
 
                 snake.step(action=action)
+
+                snake.explored_squares.add((snake.snake[0].x, snake.snake[0].y, snake.snake[0].width, snake.snake[0].height))
 
         if population_dead(population=population):  # check if every snake in the population is dead
             population = check_looping(population=population, action_dict=action_dict)
@@ -86,6 +86,8 @@ def main(pop_n: int, gen_n: int, mutation_prob: float) -> None:
             population = crossover(population, selected_pop, pop_n, mutation_prob)
 
             curr_gen += 1
+
+            action_dict = {}
 
 
 def population_dead(population: list[tuple[Snake, NeuralNetwork]]) -> bool:
@@ -124,7 +126,7 @@ def selection(population: list[tuple[Snake, NeuralNetwork]]) -> list[tuple[Snake
     population = sorted(population, key=lambda pop: pop[0].fitness, reverse=True)
 
     # slice the population to 20% its original size. remaining population will be the population with best fitnesses
-    population = population[:int(0.2 * len(population))]
+    population = population[:int(0.1 * len(population))]
 
     return population
 
@@ -218,25 +220,23 @@ def evaluate_best(snake: tuple[Snake, NeuralNetwork], sleep_dur: float) -> None:
 
 
 def check_looping(population: list[tuple[Snake, NeuralNetwork]], action_dict: dict) -> list[tuple[Snake, NeuralNetwork]]:
-    repeat_counter = 0
-    prev_action = -1
 
     for ((snake, _), actions) in zip(population, action_dict.values()):
-        for action in actions:
-            if action == prev_action:
-                repeat_counter += 1
-            else:
-                prev_action = action
+        a = "".join(map(str, actions)).split("0")
 
-        if repeat_counter == 10:
-            snake.looping = 1
-
-        repeat_counter = 0
-        prev_action = -1
+        for sequence in a:
+            if "1" in sequence and "2" in sequence:
+                pass
+            elif "1" in sequence:
+                if len(sequence) >= 20:
+                    snake.looping = 1
+            elif "2" in sequence:
+                if len(sequence) >= 20:
+                    snake.looping = 1
 
     return population
         
 
 # checks if the module is being accessed from train.py. doing this because I dont want train.py to mess up evaluate.py
 if __name__ == "__main__":
-    main(pop_n=300, gen_n=80, mutation_prob=0.30)
+    main(pop_n=500, gen_n=50, mutation_prob=0.20)
