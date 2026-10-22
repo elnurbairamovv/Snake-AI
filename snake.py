@@ -97,6 +97,7 @@ class Snake:
             food_x, food_y = self.get_random_pos()
             self.food = pygame.Rect(food_x, food_y, Snake.TILE_SIZE, Snake.TILE_SIZE)
             self.steps_since_eaten = 0
+            self.explored_squares_since_eaten = set()
         else:
             self.steps_since_eaten += 1
 
@@ -157,6 +158,9 @@ class Snake:
 
         # keep track of all the squares the snake has explored using a set. Use a set to avoid repeated squares
         self.explored_squares = set()
+
+        # keep track of how many new squares the snake has visited since it has eaten
+        self.explored_squares_since_eaten = set()
 
 
     def draw(self) -> None:

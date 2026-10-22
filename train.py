@@ -5,6 +5,7 @@ from snake import Snake
 from time import sleep
 import numpy as np
 from random import randint
+from random import seed
 
 
 # create the neural network class
@@ -42,7 +43,7 @@ def make_prediction(model: NeuralNetwork, snake: Snake) -> int:
 
 
 def fitness_function(snake: Snake) -> float:
-    return (len(snake.explored_squares) * 50 + pow(2, (len(snake.snake) - 1)) * 100 - snake.steps_since_eaten * 20 - snake.looping * 500)
+    return (len(snake.explored_squares) * 50 + (len(snake.snake) - 1) * 1000 - snake.looping * 500)
 
 
 def main(pop_n: int, gen_n: int, mutation_prob: float) -> None:
@@ -50,8 +51,10 @@ def main(pop_n: int, gen_n: int, mutation_prob: float) -> None:
     population = [(Snake(), NeuralNetwork()) for _ in range(pop_n)]
     action_dict = {}
     curr_gen = 1
-
+    
     while curr_gen <= gen_n:
+        # set the random seed for each generation to be able to replicate experiments
+        seed(curr_gen)
 
         for i, (snake, model) in enumerate(population):
             if snake.running:
@@ -65,7 +68,8 @@ def main(pop_n: int, gen_n: int, mutation_prob: float) -> None:
 
                 snake.step(action=action)
 
-                snake.explored_squares.add((snake.snake[0].x, snake.snake[0].y, snake.snake[0].width, snake.snake[0].height))
+                snake.explored_squares.add((snake.snake[0].x, snake.snake[0].y))
+                snake.explored_squares_since_eaten.add((snake.snake[0].x, snake.snake[0].y))
 
         if population_dead(population=population):  # check if every snake in the population is dead
             population = check_looping(population=population, action_dict=action_dict)
@@ -126,7 +130,7 @@ def selection(population: list[tuple[Snake, NeuralNetwork]]) -> list[tuple[Snake
     population = sorted(population, key=lambda pop: pop[0].fitness, reverse=True)
 
     # slice the population to 20% its original size. remaining population will be the population with best fitnesses
-    population = population[:int(0.1 * len(population))]
+    population = population[:int(0.2 * len(population))]
 
     return population
 
@@ -157,7 +161,8 @@ def crossover(population: list[tuple[Snake, NeuralNetwork]], selected_population
     # get the weights of every model but flatten them to make indexing easier and get their shapes so you can reshape them at the end
     weights, shapes = get_weights(selected_population)
 
-    child_weights = []
+    # keep top 10 snakes from the selected top population
+    child_weights = weights[:10]
 
     for _ in range(int(np.ceil(pop_n / 2))):
         # select the two parent weights. its okay to select with replacement
@@ -167,11 +172,11 @@ def crossover(population: list[tuple[Snake, NeuralNetwork]], selected_population
         # its fine to select either parent since the shapes are all the same. basically i am gonna merge two parent weights using slicing
         crossover_point = randint(0, len(parent_1_weight) - 1)
 
-        child_1_weight = np.concat([parent_1_weight[crossover_point:], parent_2_weight[:crossover_point]])
-        child_2_weight = np.concat([parent_2_weight[crossover_point:], parent_1_weight[:crossover_point]])
+        child_1_weight = np.concat([parent_1_weight[:crossover_point], parent_2_weight[crossover_point:]])
+        child_2_weight = np.concat([parent_2_weight[:crossover_point], parent_1_weight[crossover_point:]])
 
-        child_1_weight = mutation(child_1_weight, mutation_prob, mutation_std=0.4)
-        child_2_weight = mutation(child_2_weight, mutation_prob, mutation_std=0.4)
+        child_1_weight = mutation(child_1_weight, mutation_prob, mutation_std=0.1)
+        child_2_weight = mutation(child_2_weight, mutation_prob, mutation_std=0.1)
 
         child_weights.append(child_1_weight)
         child_weights.append(child_2_weight)
@@ -201,8 +206,8 @@ def crossover(population: list[tuple[Snake, NeuralNetwork]], selected_population
 
 
 def mutation(child_weight: list, mutation_prob: float, mutation_std: float) -> list:
-    if np.random.rand() < mutation_prob:
-        child_weight += np.random.normal(loc=0, scale=mutation_std, size=len(child_weight))
+    mask = np.random.rand(len(child_weight)) < mutation_prob
+    child_weight += mask * np.random.normal(loc=0, scale=mutation_std, size=len(child_weight))
 
     return child_weight
 
@@ -220,23 +225,13 @@ def evaluate_best(snake: tuple[Snake, NeuralNetwork], sleep_dur: float) -> None:
 
 
 def check_looping(population: list[tuple[Snake, NeuralNetwork]], action_dict: dict) -> list[tuple[Snake, NeuralNetwork]]:
-
-    for ((snake, _), actions) in zip(population, action_dict.values()):
-        a = "".join(map(str, actions)).split("0")
-
-        for sequence in a:
-            if "1" in sequence and "2" in sequence:
-                pass
-            elif "1" in sequence:
-                if len(sequence) >= 20:
-                    snake.looping = 1
-            elif "2" in sequence:
-                if len(sequence) >= 20:
-                    snake.looping = 1
+    for snake, _ in population:
+        if snake.steps_since_eaten > 30:
+            snake.looping = True
 
     return population
         
 
 # checks if the module is being accessed from train.py. doing this because I dont want train.py to mess up evaluate.py
 if __name__ == "__main__":
-    main(pop_n=500, gen_n=50, mutation_prob=0.20)
+    main(pop_n=250, gen_n=80, mutation_prob=0.05)
