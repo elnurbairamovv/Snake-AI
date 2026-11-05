@@ -6,6 +6,7 @@ from time import sleep
 import numpy as np
 from random import randint
 from random import seed
+import pygame
 
 
 # create the neural network class
@@ -49,49 +50,44 @@ def fitness_function(snake: Snake) -> float:
 def main(pop_n: int, gen_n: int, mutation_prob: float) -> None:
     # initialize the population of snakes and the neural networks that each snake gets
     population = [(Snake(), NeuralNetwork()) for _ in range(pop_n)]
-    action_dict = {}
     curr_gen = 1
-    
+
     while curr_gen <= gen_n:
+        # attempt to fix window not responding
+        pygame.event.pump()
+        
         # set the random seed for each generation to be able to replicate experiments
         seed(curr_gen)
 
-        for i, (snake, model) in enumerate(population):
+        for _, (snake, model) in enumerate(population):
             if snake.running:
                 action = make_prediction(model=model, snake=snake)
-
-                # I need to store all the snake's actions somewhere to see if a particular snake is looping or not
-                if len(action_dict) < len(population):
-                    action_dict[f"Snake_{i}"] = [action]
-                else:
-                    action_dict[f"Snake_{i}"].append(action)
-
                 snake.step(action=action)
 
                 snake.explored_squares.add((snake.snake[0].x, snake.snake[0].y))
                 snake.explored_squares_since_eaten.add((snake.snake[0].x, snake.snake[0].y))
 
         if population_dead(population=population):  # check if every snake in the population is dead
-            population = check_looping(population=population, action_dict=action_dict)
+            population = check_looping(population=population)
 
             fitnesses = get_fitnesses(population=population)
 
             display_stats(fitnesses=fitnesses, curr_gen=curr_gen)
 
-            # TODO: breed the neural networks
+            # TODO: breed the neural networks (done)
             # 1. start with the selection process (done)
             selected_pop = selection(population)
             best_snake = selected_pop[0]
 
-            # 2. display the snake with highest fitness for the current generation
+            # 2. display the snake with highest fitness for the current generation (done needs one bug fix)
+            # TODO: fix the window not responding bug and afterwards investigate fitness values of snakes
             evaluate_best(snake=best_snake, sleep_dur=0.025)
 
-            # 3. finish the crossover function (too many bugs twin)
+            # 3. finish the crossover function (done)
             population = crossover(population, selected_pop, pop_n, mutation_prob)
 
-            curr_gen += 1
 
-            action_dict = {}
+            curr_gen += 1
 
 
 def population_dead(population: list[tuple[Snake, NeuralNetwork]]) -> bool:
@@ -213,18 +209,22 @@ def mutation(child_weight: list, mutation_prob: float, mutation_std: float) -> l
 
 
 def evaluate_best(snake: tuple[Snake, NeuralNetwork], sleep_dur: float) -> None:
+    print(f"# of apples eaten: {len(snake[0].snake) - 1}")
+    
     snake[0].reset()
+    window = snake[0].initialize_board()
+    while snake[0].running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                raise SystemExit
+            
+        snake[0].draw(window=window)
+        snake[0].step(action=make_prediction(model=snake[1], snake=snake[0]))
+        sleep(sleep_dur)
 
-    while True:
-        if snake[0].running:
-            snake[0].draw()
-            snake[0].step(action=make_prediction(model=snake[1], snake=snake[0]))
-            sleep(sleep_dur)
-        else:
-            break
 
-
-def check_looping(population: list[tuple[Snake, NeuralNetwork]], action_dict: dict) -> list[tuple[Snake, NeuralNetwork]]:
+def check_looping(population: list[tuple[Snake, NeuralNetwork]]) -> list[tuple[Snake, NeuralNetwork]]:
     for snake, _ in population:
         if snake.steps_since_eaten > 30:
             snake.looping = True

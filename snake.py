@@ -163,10 +163,7 @@ class Snake:
         self.explored_squares_since_eaten = set()
 
 
-    def draw(self) -> None:
-        window = pygame.display.set_mode(      # define the width and height of the window
-            (Snake.GAME_WIDTH, 
-             Snake.GAME_HEIGHT))
+    def draw(self, window: pygame.Surface) -> None:
         window.fill(color=Snake.BLACK)
         self.draw_grid(window=window)
 
@@ -176,6 +173,14 @@ class Snake:
         pygame.draw.rect(surface=window, color=Snake.RED, rect=self.food)
         
         pygame.display.update()                # update the window
+
+
+    def initialize_board(self) -> pygame.Surface:
+        window = pygame.display.set_mode(      # define the width and height of the window
+                (Snake.GAME_WIDTH, 
+                Snake.GAME_HEIGHT))
+
+        return window
 
 
     def draw_grid(self, window: pygame.Surface) -> None:
