@@ -1,6 +1,7 @@
 # import the necessary libraries:
 import pygame
 from random import randint
+from random import Random
 
 
 # TODO: draw the board to see how the neural network is doing
@@ -21,8 +22,8 @@ class Snake:
     SNAKE_X = 10 * TILE_SIZE                    # initial x position of snake's head will be a fixed constant
     SNAKE_Y = 10 * TILE_SIZE                    # initial y position of snake's head will be a fixed constant
 
-    def __init__(self):
-        self.reset()                            # initialize instance variables using reset method
+    def __init__(self, seed: int = 1):
+        self.reset(seed=seed)                            # initialize instance variables using reset method
 
 
     def step(self, action: int) -> list:
@@ -126,7 +127,7 @@ class Snake:
         return random_x, random_y
 
 
-    def reset(self) -> None:
+    def reset(self, seed: int = 1) -> None:
         # initialize pygame
         pygame.init()
 
@@ -161,6 +162,12 @@ class Snake:
 
         # keep track of how many new squares the snake has visited since it has eaten
         self.explored_squares_since_eaten = set()
+
+        # keep track of seed for Random
+        self.seed = seed
+
+        # make sure that each snake random apple generation is consistent
+        self.rng = Random(seed)
 
 
     def draw(self, window: pygame.Surface) -> None:

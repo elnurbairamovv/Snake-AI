@@ -5,7 +5,6 @@ from snake import Snake
 from time import sleep
 import numpy as np
 from random import randint
-from random import seed
 import pygame
 
 
@@ -55,9 +54,6 @@ def main(pop_n: int, gen_n: int, mutation_prob: float) -> None:
     while curr_gen <= gen_n:
         # attempt to fix window not responding
         pygame.event.pump()
-        
-        # set the random seed for each generation to be able to replicate experiments
-        seed(curr_gen)
 
         for _, (snake, model) in enumerate(population):
             if snake.running:
@@ -84,8 +80,7 @@ def main(pop_n: int, gen_n: int, mutation_prob: float) -> None:
             evaluate_best(snake=best_snake, sleep_dur=0.025)
 
             # 3. finish the crossover function (done)
-            population = crossover(population, selected_pop, pop_n, mutation_prob)
-
+            population = crossover(population, selected_pop, pop_n, mutation_prob, curr_gen)
 
             curr_gen += 1
 
@@ -153,7 +148,7 @@ def get_weights(population: list[tuple[Snake, NeuralNetwork]]) -> tuple[list[lis
     return all_weights, shapes
 
 
-def crossover(population: list[tuple[Snake, NeuralNetwork]], selected_population: list[tuple[Snake, NeuralNetwork]], pop_n: int, mutation_prob: float) -> list[tuple[Snake, NeuralNetwork]]:
+def crossover(population: list[tuple[Snake, NeuralNetwork]], selected_population: list[tuple[Snake, NeuralNetwork]], pop_n: int, mutation_prob: float, curr_gen: int) -> list[tuple[Snake, NeuralNetwork]]:
     # get the weights of every model but flatten them to make indexing easier and get their shapes so you can reshape them at the end
     weights, shapes = get_weights(selected_population)
 
@@ -178,7 +173,7 @@ def crossover(population: list[tuple[Snake, NeuralNetwork]], selected_population
         child_weights.append(child_2_weight)
 
     for i, (snake, model) in enumerate(population):
-        snake.reset()                               # reinitialize all the snakes
+        snake.reset(seed=(curr_gen + 1))                               # reinitialize all the snakes
 
         # my shapes list contains dimensions that are not flat (e.g 16x19 is 2d not 1d) and my weight list contains many weights that are 1d
         # those 1d weights contain every single weights for a network. This includes every single layers in the network
@@ -211,7 +206,7 @@ def mutation(child_weight: list, mutation_prob: float, mutation_std: float) -> l
 def evaluate_best(snake: tuple[Snake, NeuralNetwork], sleep_dur: float) -> None:
     print(f"# of apples eaten: {len(snake[0].snake) - 1}")
     
-    snake[0].reset()
+    snake[0].reset(seed=snake[0].seed)
     window = snake[0].initialize_board()
     while snake[0].running:
         for event in pygame.event.get():
