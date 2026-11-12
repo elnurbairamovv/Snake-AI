@@ -1,6 +1,5 @@
 # import the necessary libraries:
 import pygame
-from random import randint
 from random import Random
 
 
@@ -119,10 +118,10 @@ class Snake:
 
 
     def get_random_pos(self) -> tuple[float, float]:
-        random_x, random_y = (randint(0, Snake.COLUMNS - 1) * Snake.TILE_SIZE, randint(0, Snake.ROWS - 1) * Snake.TILE_SIZE)
+        random_x, random_y = (self.rng.randint(0, Snake.COLUMNS - 1) * Snake.TILE_SIZE, self.rng.randint(0, Snake.ROWS - 1) * Snake.TILE_SIZE)
         
         while (pygame.Rect(random_x, random_y, Snake.TILE_SIZE, Snake.TILE_SIZE) in self.snake):
-            random_x, random_y = (randint(0, Snake.COLUMNS - 1) * Snake.TILE_SIZE, randint(0, Snake.ROWS - 1) * Snake.TILE_SIZE)
+            random_x, random_y = (self.rng.randint(0, Snake.COLUMNS - 1) * Snake.TILE_SIZE, self.rng.randint(0, Snake.ROWS - 1) * Snake.TILE_SIZE)
     
         return random_x, random_y
 
@@ -130,6 +129,12 @@ class Snake:
     def reset(self, seed: int = 1) -> None:
         # initialize pygame
         pygame.init()
+
+        # keep track of seed for Random
+        self.seed = seed
+        
+        # make sure that each snake random apple generation is consistent
+        self.rng = Random(seed)
 
         # snake is going to be a list because it is made up of many rectangles
         self.snake = [pygame.Rect(Snake.SNAKE_X, Snake.SNAKE_Y, Snake.TILE_SIZE, Snake.TILE_SIZE)]
@@ -162,12 +167,6 @@ class Snake:
 
         # keep track of how many new squares the snake has visited since it has eaten
         self.explored_squares_since_eaten = set()
-
-        # keep track of seed for Random
-        self.seed = seed
-
-        # make sure that each snake random apple generation is consistent
-        self.rng = Random(seed)
 
 
     def draw(self, window: pygame.Surface) -> None:

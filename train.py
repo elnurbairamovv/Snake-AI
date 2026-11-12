@@ -76,13 +76,15 @@ def main(pop_n: int, gen_n: int, mutation_prob: float) -> None:
             best_snake = selected_pop[0]
 
             # 2. display the snake with highest fitness for the current generation (done needs one bug fix)
-            # TODO: fix the window not responding bug and afterwards investigate fitness values of snakes
-            evaluate_best(snake=best_snake, sleep_dur=0.025)
+            # TODO: fix the window not responding bug and afterwards investigate fitness values of snakes (done)
+            evaluate_best(snake=best_snake, sleep_dur=0.001)
 
             # 3. finish the crossover function (done)
             population = crossover(population, selected_pop, pop_n, mutation_prob, curr_gen)
 
             curr_gen += 1
+
+    torch.save(best_snake[1].state_dict(), "best_snake_weights.pth")
 
 
 def population_dead(population: list[tuple[Snake, NeuralNetwork]]) -> bool:
@@ -204,7 +206,7 @@ def mutation(child_weight: list, mutation_prob: float, mutation_std: float) -> l
 
 
 def evaluate_best(snake: tuple[Snake, NeuralNetwork], sleep_dur: float) -> None:
-    print(f"# of apples eaten: {len(snake[0].snake) - 1}")
+    print(f"# of food eaten for current generation best snake: {len(snake[0].snake) - 1}\n")
     
     snake[0].reset(seed=snake[0].seed)
     window = snake[0].initialize_board()
@@ -229,4 +231,4 @@ def check_looping(population: list[tuple[Snake, NeuralNetwork]]) -> list[tuple[S
 
 # checks if the module is being accessed from train.py. doing this because I dont want train.py to mess up evaluate.py
 if __name__ == "__main__":
-    main(pop_n=250, gen_n=80, mutation_prob=0.05)
+    main(pop_n=100, gen_n=50, mutation_prob=0.05)
