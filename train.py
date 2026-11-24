@@ -14,11 +14,11 @@ class NeuralNetwork(nn.Module):
         super().__init__()                      # inherit from nn.Module class
         self.flatten = nn.Flatten()             # this is used to turn a multidimensional tensor to a 1d tensor
         self.network_stack = nn.Sequential(     # intialize every layer and the activation functions
-            nn.Linear(19, 16),
+            nn.Linear(18, 24),
             nn.Tanh(),
-            nn.Linear(16, 16),
+            nn.Linear(24, 24),
             nn.Tanh(),
-            nn.Linear(16, 3)
+            nn.Linear(24, 3)
         )
 
     
@@ -223,7 +223,7 @@ def evaluate_best(snake: tuple[Snake, NeuralNetwork], sleep_dur: float) -> None:
 
 def check_looping(population: list[tuple[Snake, NeuralNetwork]]) -> list[tuple[Snake, NeuralNetwork]]:
     for snake, _ in population:
-        if snake.steps_since_eaten > 30:
+        if snake.steps_since_eaten > 30 + 2 * len(snake.snake):
             snake.looping = True
 
     return population
@@ -231,4 +231,4 @@ def check_looping(population: list[tuple[Snake, NeuralNetwork]]) -> list[tuple[S
 
 # checks if the module is being accessed from train.py. doing this because I dont want train.py to mess up evaluate.py
 if __name__ == "__main__":
-    main(pop_n=100, gen_n=50, mutation_prob=0.05)
+    main(pop_n=500, gen_n=300, mutation_prob=0.05)
