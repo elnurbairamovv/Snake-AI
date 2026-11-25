@@ -5,6 +5,7 @@ from snake import Snake
 from time import sleep
 import numpy as np
 from random import randint
+from copy import deepcopy
 import pygame
 
 
@@ -14,11 +15,11 @@ class NeuralNetwork(nn.Module):
         super().__init__()                      # inherit from nn.Module class
         self.flatten = nn.Flatten()             # this is used to turn a multidimensional tensor to a 1d tensor
         self.network_stack = nn.Sequential(     # intialize every layer and the activation functions
-            nn.Linear(18, 24),
+            nn.Linear(18, 36),
             nn.Tanh(),
-            nn.Linear(24, 24),
+            nn.Linear(36, 36),
             nn.Tanh(),
-            nn.Linear(24, 3)
+            nn.Linear(36, 3)
         )
 
     
@@ -43,12 +44,14 @@ def make_prediction(model: NeuralNetwork, snake: Snake) -> int:
 
 
 def fitness_function(snake: Snake) -> float:
-    return (len(snake.explored_squares) * 50 + (len(snake.snake) - 1) * 1000 - snake.looping * 500)
+    return (pow(1.005, snake.steps) + len(snake.explored_squares) * 50 + (len(snake.snake) - 1) * 1000 - snake.looping * 500)
 
 
 def main(pop_n: int, gen_n: int, mutation_prob: float) -> None:
     # initialize the population of snakes and the neural networks that each snake gets
     population = [(Snake(), NeuralNetwork()) for _ in range(pop_n)]
+    # list used to keep track of the snakes with highest fitness from each generation
+    every_best_snake = []
     curr_gen = 1
 
     while curr_gen <= gen_n:
@@ -73,17 +76,21 @@ def main(pop_n: int, gen_n: int, mutation_prob: float) -> None:
             # TODO: breed the neural networks (done)
             # 1. start with the selection process (done)
             selected_pop = selection(population)
-            best_snake = selected_pop[0]
+            curr_best_snake = selected_pop[0]
+            print(f"\ncurrent best snake steps: {curr_best_snake[0].steps}")
+
+            every_best_snake.append(curr_best_snake)
 
             # 2. display the snake with highest fitness for the current generation (done needs one bug fix)
             # TODO: fix the window not responding bug and afterwards investigate fitness values of snakes (done)
-            evaluate_best(snake=best_snake, sleep_dur=0.001)
+            evaluate_best(snake=curr_best_snake, sleep_dur=0.0001)
 
             # 3. finish the crossover function (done)
             population = crossover(population, selected_pop, pop_n, mutation_prob, curr_gen)
 
             curr_gen += 1
 
+    best_snake = sorted(every_best_snake, key=lambda snake: snake[0].fitness, reverse=True)[0]
     torch.save(best_snake[1].state_dict(), "best_snake_weights.pth")
 
 

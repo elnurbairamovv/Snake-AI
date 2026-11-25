@@ -197,7 +197,7 @@ class Snake:
 
 
     def get_information(self) -> None:
-        information = [0.0 for _ in range(18)]
+        information = [0.0 if i not in [14, 15, 16] else 1.0 for i in range(18)]
         # Snake's head direction information: Do one hot encoding based on which direction the snake's head is moving
         # You can skip one of the directions because it is redundant since the degrees of freedom for direction is 3, this would be the approach IF my snake started automatically moving from the start
         # Which means, you cant skip any of the directions because they are all needed. At the start all the directions are 0 which means the degrees of freedom has to be 4 for direction
